@@ -37,8 +37,8 @@ const publicDirectory = path.join(
   "public"
 );
 
-app.use(express.static(clientDirectory));
 app.use(express.static(publicDirectory));
+app.use(express.static(clientDirectory));
 
 app.get("/health", (_request, response) => {
   response.status(200).json({
