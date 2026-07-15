@@ -3,6 +3,7 @@ import type {
 } from "../shared/protocol";
 
 interface ToolbarElements {
+    clearButton: HTMLButtonElement;
   brushButton: HTMLButtonElement;
   eraserButton: HTMLButtonElement;
   colorInput: HTMLInputElement;
@@ -20,6 +21,10 @@ export class Toolbar {
       document.querySelector<HTMLButtonElement>(
         "#brushButton"
       );
+      const clearButton =
+  document.querySelector<HTMLButtonElement>(
+    "#clearButton"
+  );
 
     const eraserButton =
       document.querySelector<HTMLButtonElement>(
@@ -58,7 +63,7 @@ export class Toolbar {
       !widthInput ||
       !widthValue ||
       !undoButton ||
-      !redoButton
+      !redoButton || !clearButton
     ) {
       throw new Error(
         "Toolbar elements are missing."
@@ -66,16 +71,24 @@ export class Toolbar {
     }
 
     this.elements = {
-      brushButton,
-      eraserButton,
-      colorInput,
-      widthInput,
-      widthValue,
-      undoButton,
-      redoButton
-    };
+  brushButton,
+  eraserButton,
+  colorInput,
+  widthInput,
+  widthValue,
+  undoButton,
+  redoButton,
+  clearButton
+};
   }
-
+public onClear(
+  listener: () => void
+): void {
+  this.elements.clearButton.addEventListener(
+    "click",
+    listener
+  );
+}
   public onToolChange(
     listener: (tool: DrawingTool) => void
   ): void {

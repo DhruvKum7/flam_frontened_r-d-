@@ -52,7 +52,18 @@ export class DrawingStateManager {
       points: [stroke.point]
     });
   }
+  public clearRoom(roomId: string): void {
+  const room = this.rooms.get(roomId);
 
+  if (!room) {
+    return;
+  }
+
+  room.sequence = 0;
+  room.history = [];
+  room.activeStrokes.clear();
+  room.redoStack = [];
+}
   public addPoints(
     roomId: string,
     strokeId: string,

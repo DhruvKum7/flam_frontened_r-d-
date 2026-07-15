@@ -166,6 +166,15 @@ socketClient = new WebSocketClient(
         payload.canUndo,
         payload.canRedo
       );
+    },
+
+    onCanvasCleared: (payload) => {
+      drawingCanvas.clearCanvas();
+
+      toolbar.setHistoryState(
+        payload.canUndo,
+        payload.canRedo
+      );
     }
   }
 );
@@ -188,6 +197,18 @@ toolbar.onUndo(() => {
 
 toolbar.onRedo(() => {
   socketClient?.requestRedo();
+});
+
+toolbar.onClear(() => {
+  const confirmed = window.confirm(
+    "Clear the canvas for everyone in this room?"
+  );
+
+  if (!confirmed) {
+    return;
+  }
+
+  socketClient?.requestClearCanvas();
 });
 
 let lastCursorSentAt = 0;

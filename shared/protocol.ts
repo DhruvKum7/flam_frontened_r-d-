@@ -14,7 +14,14 @@ export interface CanvasStatePayload {
   canUndo: boolean;
   canRedo: boolean;
 }
+export interface ClearCanvasRequestPayload {
+  roomId: string;
+}
 
+export interface CanvasClearedPayload {
+  canUndo: boolean;
+  canRedo: boolean;
+}
 export interface HistoryStatePayload {
   canUndo: boolean;
   canRedo: boolean;

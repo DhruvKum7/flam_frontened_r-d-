@@ -4,6 +4,8 @@ import path from "path";
 import { Server } from "socket.io";
 
 import type {
+
+    ClearCanvasRequestPayload,
   CursorMovePayload,
   JoinRoomPayload,
   RedoRequestPayload,
@@ -321,7 +323,29 @@ io.on("connection", (socket) => {
       );
     }
   );
+  socket.on(
+  "clear-canvas-request",
+  (payload: ClearCanvasRequestPayload) => {
+    if (
+      !currentRoomId ||
+      payload.roomId !== currentRoomId
+    ) {
+      return;
+    }
 
+    drawingStateManager.clearRoom(
+      currentRoomId
+    );
+
+    io.to(currentRoomId).emit(
+      "canvas-cleared",
+      {
+        canUndo: false,
+        canRedo: false
+      }
+    );
+  }
+);
   socket.on("disconnect", () => {
     if (currentRoomId) {
       roomManager.removeUser(

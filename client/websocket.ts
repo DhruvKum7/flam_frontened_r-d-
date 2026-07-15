@@ -11,7 +11,9 @@ import type {
   StrokePointsPayload,
   StrokeStartPayload,
   UndoRequestPayload,
-  UserLeftPayload
+  UserLeftPayload,
+  CanvasClearedPayload,
+ClearCanvasRequestPayload
 } from "../shared/protocol";
 
 interface SocketClient {
@@ -29,6 +31,9 @@ interface SocketClient {
 declare const io: () => SocketClient;
 
 interface WebSocketHandlers {
+    onCanvasCleared: (
+  payload: CanvasClearedPayload
+) => void;
   onConnected: (
     userId: string
   ) => void;
@@ -70,7 +75,16 @@ export class WebSocketClient {
   private readonly socket: SocketClient;
   private readonly roomId: string;
   private readonly userName: string;
+    public requestClearCanvas(): void {
+  const payload: ClearCanvasRequestPayload = {
+    roomId: this.roomId
+  };
 
+  this.socket.emit(
+    "clear-canvas-request",
+    payload
+  );
+}
   public constructor(
     statusElement: HTMLDivElement,
     roomId: string,
@@ -260,7 +274,10 @@ export class WebSocketClient {
       "canvas-state",
       handlers.onCanvasState
     );
-
+    this.socket.on(
+  "canvas-cleared",
+  handlers.onCanvasCleared
+);
     this.socket.on(
       "history-state",
       handlers.onHistoryState

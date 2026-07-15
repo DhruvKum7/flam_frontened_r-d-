@@ -241,7 +241,7 @@ public renderCanvasState(
   }
 }
 
-private clearCanvas(): void {
+public clearCanvas(): void {
   const bounds =
     this.canvas.getBoundingClientRect();
 
