@@ -1,8 +1,13 @@
 import type {
+  ConnectionReadyPayload,
+  CursorMovePayload,
   JoinRoomPayload,
+  RemoteCursorPayload,
+  RoomUsersPayload,
   StrokeEndPayload,
   StrokePointsPayload,
-  StrokeStartPayload
+  StrokeStartPayload,
+  UserLeftPayload
 } from "../shared/protocol";
 
 interface SocketClient {
@@ -11,35 +16,89 @@ interface SocketClient {
     listener: (payload: any) => void
   ): void;
 
-  emit(eventName: string, payload: unknown): void;
+  emit(
+    eventName: string,
+    payload: unknown
+  ): void;
 }
 
 declare const io: () => SocketClient;
 
 interface WebSocketHandlers {
-  onStrokeStart: (payload: StrokeStartPayload) => void;
-  onStrokePoints: (payload: StrokePointsPayload) => void;
-  onStrokeEnd: (payload: StrokeEndPayload) => void;
+  onConnected: (
+    userId: string
+  ) => void;
+
+  onRoomUsers: (
+    payload: RoomUsersPayload
+  ) => void;
+
+  onCursorMove: (
+    payload: RemoteCursorPayload
+  ) => void;
+
+  onUserLeft: (
+    payload: UserLeftPayload
+  ) => void;
+
+  onStrokeStart: (
+    payload: StrokeStartPayload
+  ) => void;
+
+  onStrokePoints: (
+    payload: StrokePointsPayload
+  ) => void;
+
+  onStrokeEnd: (
+    payload: StrokeEndPayload
+  ) => void;
 }
 
 export class WebSocketClient {
   private readonly socket: SocketClient;
   private readonly roomId: string;
+  private readonly userName: string;
 
   public constructor(
     statusElement: HTMLDivElement,
     roomId: string,
+    userName: string,
     handlers: WebSocketHandlers
   ) {
     this.socket = io();
     this.roomId = roomId;
+    this.userName = userName;
 
-    this.attachConnectionEvents(statusElement);
+    this.attachConnectionEvents(
+      statusElement,
+      handlers
+    );
+
+    this.attachRoomEvents(handlers);
     this.attachDrawingEvents(handlers);
   }
 
+  public sendCursorPosition(
+    x: number,
+    y: number
+  ): void {
+    const payload: CursorMovePayload = {
+      roomId: this.roomId,
+      x,
+      y
+    };
+
+    this.socket.emit(
+      "cursor-move",
+      payload
+    );
+  }
+
   public sendStrokeStart(
-    payload: Omit<StrokeStartPayload, "roomId">
+    payload: Omit<
+      StrokeStartPayload,
+      "roomId"
+    >
   ): void {
     this.socket.emit("stroke-start", {
       ...payload,
@@ -48,7 +107,10 @@ export class WebSocketClient {
   }
 
   public sendStrokePoints(
-    payload: Omit<StrokePointsPayload, "roomId">
+    payload: Omit<
+      StrokePointsPayload,
+      "roomId"
+    >
   ): void {
     this.socket.emit("stroke-points", {
       ...payload,
@@ -57,7 +119,10 @@ export class WebSocketClient {
   }
 
   public sendStrokeEnd(
-    payload: Omit<StrokeEndPayload, "roomId">
+    payload: Omit<
+      StrokeEndPayload,
+      "roomId"
+    >
   ): void {
     this.socket.emit("stroke-end", {
       ...payload,
@@ -66,29 +131,70 @@ export class WebSocketClient {
   }
 
   private attachConnectionEvents(
-    statusElement: HTMLDivElement
+    statusElement: HTMLDivElement,
+    handlers: WebSocketHandlers
   ): void {
     this.socket.on("connect", () => {
-      statusElement.textContent = "Connected";
-      statusElement.classList.remove("disconnected");
-      statusElement.classList.add("connected");
+      statusElement.textContent =
+        "Connected";
+
+      statusElement.classList.remove(
+        "disconnected"
+      );
+
+      statusElement.classList.add(
+        "connected"
+      );
 
       const payload: JoinRoomPayload = {
-        roomId: this.roomId
+        roomId: this.roomId,
+        name: this.userName
       };
 
-      this.socket.emit("join-room", payload);
+      this.socket.emit(
+        "join-room",
+        payload
+      );
     });
 
     this.socket.on("disconnect", () => {
-      statusElement.textContent = "Disconnected";
-      statusElement.classList.remove("connected");
-      statusElement.classList.add("disconnected");
+      statusElement.textContent =
+        "Disconnected";
+
+      statusElement.classList.remove(
+        "connected"
+      );
+
+      statusElement.classList.add(
+        "disconnected"
+      );
     });
 
-    this.socket.on("connection-ready", (payload) => {
-      console.log(`Current user: ${payload.userId}`);
-    });
+    this.socket.on(
+      "connection-ready",
+      (payload: ConnectionReadyPayload) => {
+        handlers.onConnected(payload.userId);
+      }
+    );
+  }
+
+  private attachRoomEvents(
+    handlers: WebSocketHandlers
+  ): void {
+    this.socket.on(
+      "room-users",
+      handlers.onRoomUsers
+    );
+
+    this.socket.on(
+      "cursor-move",
+      handlers.onCursorMove
+    );
+
+    this.socket.on(
+      "user-left",
+      handlers.onUserLeft
+    );
   }
 
   private attachDrawingEvents(

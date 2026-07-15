@@ -1,4 +1,6 @@
-import type { DrawingTool } from "../shared/protocol";
+import type {
+  DrawingTool
+} from "../shared/protocol";
 
 interface ToolbarElements {
   brushButton: HTMLButtonElement;
@@ -13,19 +15,29 @@ export class Toolbar {
 
   public constructor() {
     const brushButton =
-      document.querySelector<HTMLButtonElement>("#brushButton");
+      document.querySelector<HTMLButtonElement>(
+        "#brushButton"
+      );
 
     const eraserButton =
-      document.querySelector<HTMLButtonElement>("#eraserButton");
+      document.querySelector<HTMLButtonElement>(
+        "#eraserButton"
+      );
 
     const colorInput =
-      document.querySelector<HTMLInputElement>("#colorInput");
+      document.querySelector<HTMLInputElement>(
+        "#colorInput"
+      );
 
     const widthInput =
-      document.querySelector<HTMLInputElement>("#widthInput");
+      document.querySelector<HTMLInputElement>(
+        "#widthInput"
+      );
 
     const widthValue =
-      document.querySelector<HTMLSpanElement>("#widthValue");
+      document.querySelector<HTMLSpanElement>(
+        "#widthValue"
+      );
 
     if (
       !brushButton ||
@@ -34,7 +46,9 @@ export class Toolbar {
       !widthInput ||
       !widthValue
     ) {
-      throw new Error("Toolbar elements are missing.");
+      throw new Error(
+        "Toolbar elements are missing."
+      );
     }
 
     this.elements = {
@@ -72,7 +86,9 @@ export class Toolbar {
     this.elements.colorInput.addEventListener(
       "input",
       () => {
-        listener(this.elements.colorInput.value);
+        listener(
+          this.elements.colorInput.value
+        );
       }
     );
   }
@@ -83,7 +99,9 @@ export class Toolbar {
     this.elements.widthInput.addEventListener(
       "input",
       () => {
-        const width = Number(this.elements.widthInput.value);
+        const width = Number(
+          this.elements.widthInput.value
+        );
 
         this.elements.widthValue.textContent =
           width.toString();
@@ -93,17 +111,19 @@ export class Toolbar {
     );
   }
 
-  private setActiveTool(tool: DrawingTool): void {
-    const isBrush = tool === "brush";
+  private setActiveTool(
+    tool: DrawingTool
+  ): void {
+    const brushSelected = tool === "brush";
 
     this.elements.brushButton.classList.toggle(
       "active",
-      isBrush
+      brushSelected
     );
 
     this.elements.eraserButton.classList.toggle(
       "active",
-      !isBrush
+      !brushSelected
     );
   }
 }

@@ -1,23 +1,28 @@
 {
-  "compilerOptions": {
-    "target": "ES2022",
-    "module": "CommonJS",
-    "moduleResolution": "Node",
-    "rootDir": ".",
-    "outDir": "dist",
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
+  "name": "collaborative-canvas",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Real-time collaborative drawing canvas using TypeScript, HTML5 Canvas and Socket.io",
+  "main": "dist/server/server.js",
+  "scripts": {
+    "build:client": "esbuild client/main.ts --bundle --outfile=public/main.js",
+    "build:server": "tsc",
+    "build": "npm run build:client && npm run build:server",
+    "dev:client": "esbuild client/main.ts --bundle --outfile=public/main.js --watch",
+    "dev:server": "tsx watch server/server.ts",
+    "dev": "concurrently \"npm run dev:client\" \"npm run dev:server\"",
+    "start": "npm run build && node dist/server/server.js"
   },
-  "include": [
-    "server/**/*.ts",
-    "shared/**/*.ts"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "client",
-    "public"
-  ]
+  "dependencies": {
+    "express": "^5.1.0",
+    "socket.io": "^4.8.1"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.0.14",
+    "concurrently": "^9.2.0",
+    "esbuild": "^0.25.6",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3"
+  }
 }

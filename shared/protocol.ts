@@ -6,6 +6,43 @@ export interface Point {
   pressure: number;
 }
 
+export interface UserInfo {
+  id: string;
+  name: string;
+  color: string;
+}
+
+export interface JoinRoomPayload {
+  roomId: string;
+  name: string;
+}
+
+export interface ConnectionReadyPayload {
+  userId: string;
+}
+
+export interface RoomUsersPayload {
+  users: UserInfo[];
+}
+
+export interface CursorMovePayload {
+  roomId: string;
+  x: number;
+  y: number;
+}
+
+export interface RemoteCursorPayload {
+  userId: string;
+  name: string;
+  color: string;
+  x: number;
+  y: number;
+}
+
+export interface UserLeftPayload {
+  userId: string;
+}
+
 export interface StrokeStartPayload {
   roomId: string;
   strokeId: string;
@@ -24,12 +61,4 @@ export interface StrokePointsPayload {
 export interface StrokeEndPayload {
   roomId: string;
   strokeId: string;
-}
-
-export interface JoinRoomPayload {
-  roomId: string;
-}
-
-export interface ConnectionReadyPayload {
-  userId: string;
 }

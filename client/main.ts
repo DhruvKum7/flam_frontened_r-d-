@@ -1,5 +1,6 @@
 import { DrawingCanvas } from "./canvas";
 import { Toolbar } from "./ui";
+import { UserPresence } from "./users";
 import { WebSocketClient } from "./websocket";
 
 const canvasElement =
@@ -12,48 +13,139 @@ const connectionStatus =
     "#connectionStatus"
   );
 
-if (!canvasElement || !connectionStatus) {
-  throw new Error("Required page elements are missing.");
+const usersList =
+  document.querySelector<HTMLUListElement>(
+    "#usersList"
+  );
+
+const cursorsContainer =
+  document.querySelector<HTMLDivElement>(
+    "#remoteCursors"
+  );
+
+const roomNameElement =
+  document.querySelector<HTMLElement>(
+    "#roomName"
+  );
+
+if (
+  !canvasElement ||
+  !connectionStatus ||
+  !usersList ||
+  !cursorsContainer ||
+  !roomNameElement
+) {
+  throw new Error(
+    "Required page elements are missing."
+  );
 }
 
+const queryParameters =
+  new URLSearchParams(
+    window.location.search
+  );
+
 const roomId =
-  new URLSearchParams(window.location.search).get(
-    "room"
-  ) || "main-room";
+  queryParameters
+    .get("room")
+    ?.trim()
+    .slice(0, 40) ||
+  "main-room";
 
-let socketClient: WebSocketClient;
+let userName =
+  queryParameters
+    .get("name")
+    ?.trim()
+    .slice(0, 24) ||
+  "";
 
-const drawingCanvas = new DrawingCanvas(
-  canvasElement,
-  {
-    onStrokeStart: (payload) => {
-      socketClient.sendStrokeStart(payload);
-    },
+if (!userName) {
+  userName =
+    window
+      .prompt("Enter your display name")
+      ?.trim()
+      .slice(0, 24) ||
+    `Guest-${Math.floor(
+      Math.random() * 1000
+    )}`;
+}
 
-    onStrokePoints: (payload) => {
-      socketClient.sendStrokePoints(payload);
-    },
+roomNameElement.textContent = roomId;
 
-    onStrokeEnd: (payload) => {
-      socketClient.sendStrokeEnd(payload);
+const userPresence =
+  new UserPresence(
+    usersList,
+    cursorsContainer
+  );
+
+let socketClient:
+  WebSocketClient | null = null;
+
+const drawingCanvas =
+  new DrawingCanvas(
+    canvasElement,
+    {
+      onStrokeStart: (payload) => {
+        socketClient?.sendStrokeStart(
+          payload
+        );
+      },
+
+      onStrokePoints: (payload) => {
+        socketClient?.sendStrokePoints(
+          payload
+        );
+      },
+
+      onStrokeEnd: (payload) => {
+        socketClient?.sendStrokeEnd(
+          payload
+        );
+      }
     }
-  }
-);
+  );
 
 socketClient = new WebSocketClient(
   connectionStatus,
   roomId,
+  userName,
   {
+    onConnected: (userId) => {
+      userPresence.setCurrentUser(
+        userId
+      );
+    },
+
+    onRoomUsers: ({ users }) => {
+      userPresence.renderUsers(users);
+    },
+
+    onCursorMove: (payload) => {
+      userPresence.updateRemoteCursor(
+        payload
+      );
+    },
+
+    onUserLeft: ({ userId }) => {
+      userPresence.removeUser(userId);
+    },
+
     onStrokeStart: (payload) => {
-      drawingCanvas.beginRemoteStroke(payload);
+      drawingCanvas.beginRemoteStroke(
+        payload
+      );
     },
 
     onStrokePoints: (payload) => {
-      drawingCanvas.drawRemotePoints(payload);
+      drawingCanvas.drawRemotePoints(
+        payload
+      );
     },
 
     onStrokeEnd: (payload) => {
-      drawingCanvas.endRemoteStroke(payload);
+      drawingCanvas.endRemoteStroke(
+        payload
+      );
     }
   }
 );
@@ -72,15 +164,72 @@ toolbar.onWidthChange((width) => {
   drawingCanvas.setWidth(width);
 });
 
-let resizeTimer: number | null = null;
+let lastCursorSentAt = 0;
 
-window.addEventListener("resize", () => {
-  if (resizeTimer !== null) {
-    window.clearTimeout(resizeTimer);
+canvasElement.addEventListener(
+  "pointermove",
+  (event) => {
+    const currentTime =
+      performance.now();
+
+    if (
+      currentTime -
+        lastCursorSentAt <
+      40
+    ) {
+      return;
+    }
+
+    lastCursorSentAt = currentTime;
+
+    const bounds =
+      canvasElement
+        .getBoundingClientRect();
+
+    if (
+      bounds.width === 0 ||
+      bounds.height === 0
+    ) {
+      return;
+    }
+
+    const normalizedX =
+      (event.clientX - bounds.left) /
+      bounds.width;
+
+    const normalizedY =
+      (event.clientY - bounds.top) /
+      bounds.height;
+
+    socketClient?.sendCursorPosition(
+      Math.min(
+        1,
+        Math.max(0, normalizedX)
+      ),
+      Math.min(
+        1,
+        Math.max(0, normalizedY)
+      )
+    );
   }
+);
 
-  resizeTimer = window.setTimeout(() => {
-    drawingCanvas.resize();
-    resizeTimer = null;
-  }, 150);
-});
+let resizeTimer:
+  number | null = null;
+
+window.addEventListener(
+  "resize",
+  () => {
+    if (resizeTimer !== null) {
+      window.clearTimeout(
+        resizeTimer
+      );
+    }
+
+    resizeTimer =
+      window.setTimeout(() => {
+        drawingCanvas.resize();
+        resizeTimer = null;
+      }, 150);
+  }
+);

@@ -8,10 +8,16 @@
     background: #eef2f7;
 }
 
+html,
 body {
+    width: 100%;
     min-width: 320px;
-    min-height: 100vh;
+    min-height: 100%;
     margin: 0;
+}
+
+body {
+    min-height: 100vh;
 }
 
 button,
@@ -67,7 +73,8 @@ input {
     min-height: 0;
     flex: 1;
     display: grid;
-    grid-template-columns: 210px minmax(0, 1fr) 210px;
+    grid-template-columns:
+        210px minmax(0, 1fr) 210px;
 }
 
 .toolbar,
@@ -111,7 +118,7 @@ input {
     cursor: pointer;
 }
 
-.toolbar button:hover {
+.toolbar button:hover:not(:disabled) {
     background: #f8fafc;
 }
 
@@ -119,6 +126,11 @@ input {
     border-color: #2563eb;
     background: #eff6ff;
     color: #1d4ed8;
+}
+
+.toolbar button:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
 }
 
 #colorInput {
@@ -146,6 +158,28 @@ input {
     touch-action: none;
 }
 
+.room-information {
+    margin-bottom: 20px;
+    padding: 12px;
+    border-radius: 10px;
+    background: #f1f5f9;
+}
+
+.room-information span {
+    display: block;
+    margin-bottom: 4px;
+    color: #64748b;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+}
+
+.room-information strong {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 #usersList {
     margin: 0;
     padding: 0;
@@ -157,9 +191,73 @@ input {
     border-bottom: 1px solid #e5e7eb;
 }
 
+.user-item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+}
+
+.user-color {
+    width: 11px;
+    height: 11px;
+    flex-shrink: 0;
+    border-radius: 50%;
+}
+
+.user-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.current-user-label {
+    margin-left: auto;
+    color: #64748b;
+    font-size: 0.75rem;
+}
+
+.remote-cursors {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.remote-cursor {
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform: translate(-100px, -100px);
+    transition: transform 70ms linear;
+    will-change: transform;
+}
+
+.remote-cursor-pointer {
+    width: 14px;
+    height: 14px;
+    border: 3px solid currentColor;
+    border-radius: 50%;
+    background: white;
+    box-shadow: 0 1px 4px rgb(0 0 0 / 20%);
+}
+
+.remote-cursor-name {
+    display: inline-block;
+    margin-top: 4px;
+    padding: 3px 7px;
+    border-radius: 5px;
+    background: currentColor;
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
 @media (max-width: 850px) {
     .workspace {
-        grid-template-columns: 180px minmax(0, 1fr);
+        grid-template-columns:
+            180px minmax(0, 1fr);
     }
 
     .users-panel {
@@ -174,12 +272,14 @@ input {
 
     .workspace {
         grid-template-columns: 1fr;
-        grid-template-rows: auto minmax(440px, 1fr);
+        grid-template-rows:
+            auto minmax(440px, 1fr);
     }
 
     .toolbar {
         display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
         gap: 8px;
         border-right: none;
         border-bottom: 1px solid #d1d5db;

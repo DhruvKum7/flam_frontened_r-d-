@@ -14,19 +14,28 @@ interface CanvasSettings {
 
 interface LocalStrokeHandlers {
   onStrokeStart: (
-    payload: Omit<StrokeStartPayload, "roomId">
+    payload: Omit<
+      StrokeStartPayload,
+      "roomId"
+    >
   ) => void;
 
   onStrokePoints: (
-    payload: Omit<StrokePointsPayload, "roomId">
+    payload: Omit<
+      StrokePointsPayload,
+      "roomId"
+    >
   ) => void;
 
   onStrokeEnd: (
-    payload: Omit<StrokeEndPayload, "roomId">
+    payload: Omit<
+      StrokeEndPayload,
+      "roomId"
+    >
   ) => void;
 }
 
-interface RemoteStroke {
+interface ActiveRemoteStroke {
   tool: DrawingTool;
   color: string;
   width: number;
@@ -34,9 +43,14 @@ interface RemoteStroke {
 }
 
 export class DrawingCanvas {
-  private readonly canvas: HTMLCanvasElement;
-  private readonly context: CanvasRenderingContext2D;
-  private readonly handlers: LocalStrokeHandlers;
+  private readonly canvas:
+    HTMLCanvasElement;
+
+  private readonly context:
+    CanvasRenderingContext2D;
+
+  private readonly handlers:
+    LocalStrokeHandlers;
 
   private settings: CanvasSettings = {
     tool: "brush",
@@ -45,26 +59,39 @@ export class DrawingCanvas {
   };
 
   private isDrawing = false;
-  private activePointerId: number | null = null;
-  private activeStrokeId: string | null = null;
 
-  private previousPoint: Point | null = null;
+  private activePointerId:
+    number | null = null;
+
+  private activeStrokeId:
+    string | null = null;
+
+  private lastRenderedPoint:
+    Point | null = null;
+
   private pendingPoints: Point[] = [];
   private networkPoints: Point[] = [];
 
-  private animationFrameId: number | null = null;
+  private animationFrameId:
+    number | null = null;
 
   private readonly remoteStrokes =
-    new Map<string, RemoteStroke>();
+    new Map<
+      string,
+      ActiveRemoteStroke
+    >();
 
   public constructor(
     canvas: HTMLCanvasElement,
     handlers: LocalStrokeHandlers
   ) {
-    const context = canvas.getContext("2d");
+    const context =
+      canvas.getContext("2d");
 
     if (!context) {
-      throw new Error("Canvas 2D context is unavailable.");
+      throw new Error(
+        "Canvas 2D context is unavailable."
+      );
     }
 
     this.canvas = canvas;
@@ -76,29 +103,42 @@ export class DrawingCanvas {
     this.resize();
   }
 
-  public setTool(tool: DrawingTool): void {
+  public setTool(
+    tool: DrawingTool
+  ): void {
     this.settings.tool = tool;
   }
 
-  public setColor(color: string): void {
+  public setColor(
+    color: string
+  ): void {
     this.settings.color = color;
   }
 
-  public setWidth(width: number): void {
-    this.settings.width = width;
+  public setWidth(
+    width: number
+  ): void {
+    this.settings.width = Math.min(
+      40,
+      Math.max(1, width)
+    );
   }
 
   public beginRemoteStroke(
     payload: StrokeStartPayload
   ): void {
-    const point = this.toCanvasPoint(payload.point);
+    const point =
+      this.toCanvasPoint(payload.point);
 
-    this.remoteStrokes.set(payload.strokeId, {
-      tool: payload.tool,
-      color: payload.color,
-      width: payload.width,
-      previousPoint: point
-    });
+    this.remoteStrokes.set(
+      payload.strokeId,
+      {
+        tool: payload.tool,
+        color: payload.color,
+        width: payload.width,
+        previousPoint: point
+      }
+    );
 
     this.drawDot(
       point,
@@ -112,14 +152,22 @@ export class DrawingCanvas {
     payload: StrokePointsPayload
   ): void {
     const remoteStroke =
-      this.remoteStrokes.get(payload.strokeId);
+      this.remoteStrokes.get(
+        payload.strokeId
+      );
 
     if (!remoteStroke) {
       return;
     }
 
-    for (const normalizedPoint of payload.points) {
-      const point = this.toCanvasPoint(normalizedPoint);
+    for (
+      const normalizedPoint
+      of payload.points
+    ) {
+      const point =
+        this.toCanvasPoint(
+          normalizedPoint
+        );
 
       this.drawSegment(
         remoteStroke.previousPoint,
@@ -129,33 +177,52 @@ export class DrawingCanvas {
         remoteStroke.width
       );
 
-      remoteStroke.previousPoint = point;
+      remoteStroke.previousPoint =
+        point;
     }
   }
 
   public endRemoteStroke(
     payload: StrokeEndPayload
   ): void {
-    this.remoteStrokes.delete(payload.strokeId);
+    this.remoteStrokes.delete(
+      payload.strokeId
+    );
   }
 
   public resize(): void {
-    const bounds = this.canvas.getBoundingClientRect();
-    const pixelRatio = window.devicePixelRatio || 1;
+    const bounds =
+      this.canvas.getBoundingClientRect();
 
-    const snapshot = document.createElement("canvas");
+    if (
+      bounds.width === 0 ||
+      bounds.height === 0
+    ) {
+      return;
+    }
+
+    const pixelRatio =
+      window.devicePixelRatio || 1;
+
+    const snapshot =
+      document.createElement("canvas");
 
     snapshot.width = this.canvas.width;
     snapshot.height = this.canvas.height;
 
-    const snapshotContext = snapshot.getContext("2d");
+    const snapshotContext =
+      snapshot.getContext("2d");
 
     if (
       snapshotContext &&
       this.canvas.width > 0 &&
       this.canvas.height > 0
     ) {
-      snapshotContext.drawImage(this.canvas, 0, 0);
+      snapshotContext.drawImage(
+        this.canvas,
+        0,
+        0
+      );
     }
 
     this.canvas.width = Math.round(
@@ -177,7 +244,10 @@ export class DrawingCanvas {
 
     this.configureContext();
 
-    if (snapshot.width > 0 && snapshot.height > 0) {
+    if (
+      snapshot.width > 0 &&
+      snapshot.height > 0
+    ) {
       this.context.drawImage(
         snapshot,
         0,
@@ -232,14 +302,20 @@ export class DrawingCanvas {
     event.preventDefault();
 
     this.isDrawing = true;
-    this.activePointerId = event.pointerId;
-    this.activeStrokeId = crypto.randomUUID();
+    this.activePointerId =
+      event.pointerId;
 
-    this.canvas.setPointerCapture(event.pointerId);
+    this.activeStrokeId =
+      this.createStrokeId();
 
-    const point = this.getCanvasPoint(event);
+    this.canvas.setPointerCapture(
+      event.pointerId
+    );
 
-    this.previousPoint = point;
+    const point =
+      this.getCanvasPoint(event);
+
+    this.lastRenderedPoint = point;
 
     this.drawDot(
       point,
@@ -253,7 +329,8 @@ export class DrawingCanvas {
       tool: this.settings.tool,
       color: this.settings.color,
       width: this.settings.width,
-      point: this.toNormalizedPoint(point)
+      point:
+        this.toNormalizedPoint(point)
     });
   };
 
@@ -262,7 +339,8 @@ export class DrawingCanvas {
   ): void => {
     if (
       !this.isDrawing ||
-      this.activePointerId !== event.pointerId
+      this.activePointerId !==
+        event.pointerId
     ) {
       return;
     }
@@ -270,21 +348,34 @@ export class DrawingCanvas {
     event.preventDefault();
 
     const pointerEvents =
-      typeof event.getCoalescedEvents === "function"
+      typeof event.getCoalescedEvents ===
+      "function"
         ? event.getCoalescedEvents()
         : [event];
 
-    for (const pointerEvent of pointerEvents) {
-      const point = this.getCanvasPoint(pointerEvent);
+    for (
+      const pointerEvent
+      of pointerEvents
+    ) {
+      const point =
+        this.getCanvasPoint(
+          pointerEvent
+        );
 
-      if (!this.previousPoint) {
-        this.previousPoint = point;
+      const referencePoint =
+        this.pendingPoints.length > 0
+          ? this.pendingPoints[
+              this.pendingPoints.length - 1
+            ]
+          : this.lastRenderedPoint;
+
+      if (!referencePoint) {
         continue;
       }
 
       const distance = Math.hypot(
-        point.x - this.previousPoint.x,
-        point.y - this.previousPoint.y
+        point.x - referencePoint.x,
+        point.y - referencePoint.y
       );
 
       if (distance < 0.75) {
@@ -292,11 +383,10 @@ export class DrawingCanvas {
       }
 
       this.pendingPoints.push(point);
+
       this.networkPoints.push(
         this.toNormalizedPoint(point)
       );
-
-      this.previousPoint = point;
     }
 
     this.scheduleRender();
@@ -306,10 +396,37 @@ export class DrawingCanvas {
     event: PointerEvent
   ): void => {
     if (
-      this.activePointerId !== event.pointerId ||
+      this.activePointerId !==
+        event.pointerId ||
       !this.activeStrokeId
     ) {
       return;
+    }
+
+    event.preventDefault();
+
+    const endPoint =
+      this.getCanvasPoint(event);
+
+    const referencePoint =
+      this.pendingPoints.length > 0
+        ? this.pendingPoints[
+            this.pendingPoints.length - 1
+          ]
+        : this.lastRenderedPoint;
+
+    if (
+      referencePoint &&
+      Math.hypot(
+        endPoint.x - referencePoint.x,
+        endPoint.y - referencePoint.y
+      ) >= 0.75
+    ) {
+      this.pendingPoints.push(endPoint);
+
+      this.networkPoints.push(
+        this.toNormalizedPoint(endPoint)
+      );
     }
 
     this.renderFrame();
@@ -318,20 +435,23 @@ export class DrawingCanvas {
       strokeId: this.activeStrokeId
     });
 
-    if (this.canvas.hasPointerCapture(event.pointerId)) {
-      this.canvas.releasePointerCapture(event.pointerId);
+    if (
+      this.canvas.hasPointerCapture(
+        event.pointerId
+      )
+    ) {
+      this.canvas.releasePointerCapture(
+        event.pointerId
+      );
     }
 
-    this.isDrawing = false;
-    this.activePointerId = null;
-    this.activeStrokeId = null;
-    this.previousPoint = null;
-    this.pendingPoints = [];
-    this.networkPoints = [];
+    this.resetLocalStroke();
   };
 
   private scheduleRender(): void {
-    if (this.animationFrameId !== null) {
+    if (
+      this.animationFrameId !== null
+    ) {
       return;
     }
 
@@ -348,52 +468,33 @@ export class DrawingCanvas {
   }
 
   private renderPendingPoints(): void {
-    if (this.pendingPoints.length === 0) {
+    if (
+      this.pendingPoints.length === 0 ||
+      !this.lastRenderedPoint
+    ) {
       return;
     }
 
-    let startPoint = this.previousPoint;
+    let previousPoint =
+      this.lastRenderedPoint;
 
-    if (this.pendingPoints.length > 0) {
-      startPoint =
-        this.pendingPoints.length > 1
-          ? this.pendingPoints[0]
-          : this.previousPoint;
-    }
-
-    if (!startPoint) {
-      return;
-    }
-
-    const points = [...this.pendingPoints];
-
-    let previous =
-      points.length > 1
-        ? points[0]
-        : startPoint;
-
-    for (let index = 1; index < points.length; index++) {
-      const current = points[index];
-
+    for (
+      const currentPoint
+      of this.pendingPoints
+    ) {
       this.drawSegment(
-        previous,
-        current,
+        previousPoint,
+        currentPoint,
         this.settings.tool,
         this.settings.color,
         this.settings.width
       );
 
-      previous = current;
+      previousPoint = currentPoint;
     }
 
-    if (points.length === 1 && this.previousPoint) {
-      this.drawDot(
-        points[0],
-        this.settings.tool,
-        this.settings.color,
-        this.settings.width
-      );
-    }
+    this.lastRenderedPoint =
+      previousPoint;
 
     this.pendingPoints = [];
   }
@@ -421,11 +522,23 @@ export class DrawingCanvas {
     color: string,
     width: number
   ): void {
-    this.applyStyle(tool, color, width);
+    this.applyStyle(
+      tool,
+      color,
+      width
+    );
 
     this.context.beginPath();
-    this.context.moveTo(from.x, from.y);
-    this.context.lineTo(to.x, to.y);
+    this.context.moveTo(
+      from.x,
+      from.y
+    );
+
+    this.context.lineTo(
+      to.x,
+      to.y
+    );
+
     this.context.stroke();
   }
 
@@ -435,9 +548,14 @@ export class DrawingCanvas {
     color: string,
     width: number
   ): void {
-    this.applyStyle(tool, color, width);
+    this.applyStyle(
+      tool,
+      color,
+      width
+    );
 
     this.context.beginPath();
+
     this.context.arc(
       point.x,
       point.y,
@@ -445,6 +563,7 @@ export class DrawingCanvas {
       0,
       Math.PI * 2
     );
+
     this.context.fill();
   }
 
@@ -459,30 +578,44 @@ export class DrawingCanvas {
       this.context.globalCompositeOperation =
         "destination-out";
 
-      this.context.strokeStyle = "#000000";
-      this.context.fillStyle = "#000000";
+      this.context.strokeStyle =
+        "#000000";
+
+      this.context.fillStyle =
+        "#000000";
     } else {
       this.context.globalCompositeOperation =
         "source-over";
 
-      this.context.strokeStyle = color;
-      this.context.fillStyle = color;
+      this.context.strokeStyle =
+        color;
+
+      this.context.fillStyle =
+        color;
     }
   }
 
-  private getCanvasPoint(event: PointerEvent): Point {
-    const bounds = this.canvas.getBoundingClientRect();
+  private getCanvasPoint(
+    event: PointerEvent
+  ): Point {
+    const bounds =
+      this.canvas.getBoundingClientRect();
 
     return {
       x: event.clientX - bounds.left,
       y: event.clientY - bounds.top,
       pressure:
-        event.pressure > 0 ? event.pressure : 0.5
+        event.pressure > 0
+          ? event.pressure
+          : 0.5
     };
   }
 
-  private toNormalizedPoint(point: Point): Point {
-    const bounds = this.canvas.getBoundingClientRect();
+  private toNormalizedPoint(
+    point: Point
+  ): Point {
+    const bounds =
+      this.canvas.getBoundingClientRect();
 
     return {
       x: point.x / bounds.width,
@@ -491,13 +624,41 @@ export class DrawingCanvas {
     };
   }
 
-  private toCanvasPoint(point: Point): Point {
-    const bounds = this.canvas.getBoundingClientRect();
+  private toCanvasPoint(
+    point: Point
+  ): Point {
+    const bounds =
+      this.canvas.getBoundingClientRect();
 
     return {
       x: point.x * bounds.width,
       y: point.y * bounds.height,
       pressure: point.pressure
     };
+  }
+
+  private createStrokeId(): string {
+    if (
+      typeof crypto.randomUUID ===
+      "function"
+    ) {
+      return crypto.randomUUID();
+    }
+
+    return [
+      Date.now().toString(36),
+      Math.random()
+        .toString(36)
+        .slice(2)
+    ].join("-");
+  }
+
+  private resetLocalStroke(): void {
+    this.isDrawing = false;
+    this.activePointerId = null;
+    this.activeStrokeId = null;
+    this.lastRenderedPoint = null;
+    this.pendingPoints = [];
+    this.networkPoints = [];
   }
 }

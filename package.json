@@ -2,7 +2,8 @@
   "name": "collaborative-canvas",
   "version": "1.0.0",
   "private": true,
-  "description": "Real-time collaborative drawing canvas built with TypeScript, HTML5 Canvas and Socket.io",
+  "description": "Real-time collaborative drawing canvas using TypeScript, HTML5 Canvas and Socket.io",
+  "main": "dist/server/server.js",
   "scripts": {
     "build:client": "esbuild client/main.ts --bundle --outfile=public/main.js",
     "build:server": "tsc",

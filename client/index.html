@@ -6,7 +6,7 @@
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <meta name="description" content="Draw together in real time using a collaborative canvas">
+    <meta name="description" content="A real-time collaborative drawing canvas">
 
     <title>Collaborative Canvas</title>
 
@@ -38,31 +38,42 @@
                     Eraser
                 </button>
 
-                <label for="colorInput">Colour</label>
+                <label for="colorInput">
+                    Colour
+                </label>
 
                 <input id="colorInput" type="color" value="#1f2937">
 
                 <label for="widthInput">
-                    Stroke width
+                    Stroke width:
                     <span id="widthValue">5</span>
                 </label>
 
                 <input id="widthInput" type="range" min="1" max="40" value="5">
 
-                <button id="undoButton" type="button">
+                <button id="undoButton" type="button" disabled>
                     Undo
                 </button>
 
-                <button id="redoButton" type="button">
+                <button id="redoButton" type="button" disabled>
                     Redo
                 </button>
             </aside>
 
-            <section class="canvas-area">
+            <section id="canvasArea" class="canvas-area">
                 <canvas id="drawingCanvas"></canvas>
+
+                <div id="remoteCursors" class="remote-cursors" aria-hidden="true"></div>
             </section>
 
             <aside class="users-panel">
+                <div class="room-information">
+                    <span>Room</span>
+                    <strong id="roomName">
+                        main-room
+                    </strong>
+                </div>
+
                 <h2>Online users</h2>
 
                 <ul id="usersList">
