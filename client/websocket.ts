@@ -1,12 +1,16 @@
 import type {
+  CanvasStatePayload,
   ConnectionReadyPayload,
   CursorMovePayload,
+  HistoryStatePayload,
   JoinRoomPayload,
+  RedoRequestPayload,
   RemoteCursorPayload,
   RoomUsersPayload,
   StrokeEndPayload,
   StrokePointsPayload,
   StrokeStartPayload,
+  UndoRequestPayload,
   UserLeftPayload
 } from "../shared/protocol";
 
@@ -52,6 +56,14 @@ interface WebSocketHandlers {
   onStrokeEnd: (
     payload: StrokeEndPayload
   ) => void;
+
+  onCanvasState: (
+    payload: CanvasStatePayload
+  ) => void;
+
+  onHistoryState: (
+    payload: HistoryStatePayload
+  ) => void;
 }
 
 export class WebSocketClient {
@@ -76,6 +88,7 @@ export class WebSocketClient {
 
     this.attachRoomEvents(handlers);
     this.attachDrawingEvents(handlers);
+    this.attachHistoryEvents(handlers);
   }
 
   public sendCursorPosition(
@@ -130,6 +143,28 @@ export class WebSocketClient {
     });
   }
 
+  public requestUndo(): void {
+    const payload: UndoRequestPayload = {
+      roomId: this.roomId
+    };
+
+    this.socket.emit(
+      "undo-request",
+      payload
+    );
+  }
+
+  public requestRedo(): void {
+    const payload: RedoRequestPayload = {
+      roomId: this.roomId
+    };
+
+    this.socket.emit(
+      "redo-request",
+      payload
+    );
+  }
+
   private attachConnectionEvents(
     statusElement: HTMLDivElement,
     handlers: WebSocketHandlers
@@ -173,7 +208,9 @@ export class WebSocketClient {
     this.socket.on(
       "connection-ready",
       (payload: ConnectionReadyPayload) => {
-        handlers.onConnected(payload.userId);
+        handlers.onConnected(
+          payload.userId
+        );
       }
     );
   }
@@ -213,6 +250,20 @@ export class WebSocketClient {
     this.socket.on(
       "stroke-end",
       handlers.onStrokeEnd
+    );
+  }
+
+  private attachHistoryEvents(
+    handlers: WebSocketHandlers
+  ): void {
+    this.socket.on(
+      "canvas-state",
+      handlers.onCanvasState
+    );
+
+    this.socket.on(
+      "history-state",
+      handlers.onHistoryState
     );
   }
 }

@@ -8,6 +8,8 @@ interface ToolbarElements {
   colorInput: HTMLInputElement;
   widthInput: HTMLInputElement;
   widthValue: HTMLSpanElement;
+  undoButton: HTMLButtonElement;
+  redoButton: HTMLButtonElement;
 }
 
 export class Toolbar {
@@ -39,12 +41,24 @@ export class Toolbar {
         "#widthValue"
       );
 
+    const undoButton =
+      document.querySelector<HTMLButtonElement>(
+        "#undoButton"
+      );
+
+    const redoButton =
+      document.querySelector<HTMLButtonElement>(
+        "#redoButton"
+      );
+
     if (
       !brushButton ||
       !eraserButton ||
       !colorInput ||
       !widthInput ||
-      !widthValue
+      !widthValue ||
+      !undoButton ||
+      !redoButton
     ) {
       throw new Error(
         "Toolbar elements are missing."
@@ -56,7 +70,9 @@ export class Toolbar {
       eraserButton,
       colorInput,
       widthInput,
-      widthValue
+      widthValue,
+      undoButton,
+      redoButton
     };
   }
 
@@ -109,6 +125,32 @@ export class Toolbar {
         listener(width);
       }
     );
+  }
+
+  public onUndo(
+    listener: () => void
+  ): void {
+    this.elements.undoButton.addEventListener(
+      "click",
+      listener
+    );
+  }
+
+  public onRedo(
+    listener: () => void
+  ): void {
+    this.elements.redoButton.addEventListener(
+      "click",
+      listener
+    );
+  }
+
+  public setHistoryState(
+    canUndo: boolean,
+    canRedo: boolean
+  ): void {
+    this.elements.undoButton.disabled = !canUndo;
+    this.elements.redoButton.disabled = !canRedo;
   }
 
   private setActiveTool(

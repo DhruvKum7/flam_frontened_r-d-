@@ -1,3 +1,33 @@
+export interface StoredStrokePayload {
+  id: string;
+  userId: string;
+  tool: DrawingTool;
+  color: string;
+  width: number;
+  points: Point[];
+  sequence: number;
+  active: boolean;
+}
+
+export interface CanvasStatePayload {
+  strokes: StoredStrokePayload[];
+  canUndo: boolean;
+  canRedo: boolean;
+}
+
+export interface HistoryStatePayload {
+  canUndo: boolean;
+  canRedo: boolean;
+}
+
+export interface UndoRequestPayload {
+  roomId: string;
+}
+
+export interface RedoRequestPayload {
+  roomId: string;
+}
+
 export type DrawingTool = "brush" | "eraser";
 
 export interface Point {

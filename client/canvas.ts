@@ -189,7 +189,103 @@ export class DrawingCanvas {
       payload.strokeId
     );
   }
+public renderCanvasState(
+  strokes: Array<{
+    tool: DrawingTool;
+    color: string;
+    width: number;
+    points: Point[];
+    active: boolean;
+    sequence: number;
+  }>
+): void {
+  this.clearCanvas();
 
+  const orderedStrokes = [...strokes]
+    .filter((stroke) => stroke.active)
+    .sort(
+      (first, second) =>
+        first.sequence - second.sequence
+    );
+
+  for (const stroke of orderedStrokes) {
+    if (stroke.points.length === 0) {
+      continue;
+    }
+
+    const canvasPoints =
+      stroke.points.map((point) =>
+        this.toCanvasPoint(point)
+      );
+
+    this.drawDot(
+      canvasPoints[0],
+      stroke.tool,
+      stroke.color,
+      stroke.width
+    );
+
+    for (
+      let index = 1;
+      index < canvasPoints.length;
+      index++
+    ) {
+      this.drawSegment(
+        canvasPoints[index - 1],
+        canvasPoints[index],
+        stroke.tool,
+        stroke.color,
+        stroke.width
+      );
+    }
+  }
+}
+
+private clearCanvas(): void {
+  const bounds =
+    this.canvas.getBoundingClientRect();
+
+  this.context.save();
+
+  this.context.setTransform(
+    1,
+    0,
+    0,
+    1,
+    0,
+    0
+  );
+
+  this.context.clearRect(
+    0,
+    0,
+    this.canvas.width,
+    this.canvas.height
+  );
+
+  this.context.restore();
+
+  const pixelRatio =
+    window.devicePixelRatio || 1;
+
+  this.context.setTransform(
+    pixelRatio,
+    0,
+    0,
+    pixelRatio,
+    0,
+    0
+  );
+
+  this.configureContext();
+
+  if (
+    bounds.width === 0 ||
+    bounds.height === 0
+  ) {
+    return;
+  }
+}
   public resize(): void {
     const bounds =
       this.canvas.getBoundingClientRect();

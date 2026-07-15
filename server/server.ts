@@ -6,11 +6,14 @@ import { Server } from "socket.io";
 import type {
   CursorMovePayload,
   JoinRoomPayload,
+  RedoRequestPayload,
   StrokeEndPayload,
   StrokePointsPayload,
-  StrokeStartPayload
+  StrokeStartPayload,
+  UndoRequestPayload
 } from "../shared/protocol";
 
+import { DrawingStateManager } from "./drawing-state";
 import { RoomManager } from "./rooms";
 
 const app = express();
@@ -18,6 +21,7 @@ const httpServer = http.createServer(app);
 const io = new Server(httpServer);
 
 const roomManager = new RoomManager();
+const drawingStateManager = new DrawingStateManager();
 
 const port = Number(process.env.PORT) || 3000;
 
@@ -53,7 +57,10 @@ io.on("connection", (socket) => {
   socket.on(
     "join-room",
     (payload: JoinRoomPayload) => {
-      const roomId = payload.roomId.trim();
+      const roomId =
+        typeof payload.roomId === "string"
+          ? payload.roomId.trim().slice(0, 40)
+          : "";
 
       if (!roomId) {
         return;
@@ -92,11 +99,23 @@ io.on("connection", (socket) => {
       roomManager.addUser(
         roomId,
         socket.id,
-        payload.name
+        typeof payload.name === "string"
+          ? payload.name
+          : "Anonymous"
       );
 
       io.to(roomId).emit("room-users", {
         users: roomManager.getUsers(roomId)
+      });
+
+      const historyState =
+        drawingStateManager.getHistoryState(roomId);
+
+      socket.emit("canvas-state", {
+        strokes:
+          drawingStateManager.getHistory(roomId),
+        canUndo: historyState.canUndo,
+        canRedo: historyState.canRedo
       });
 
       console.log(
@@ -137,8 +156,14 @@ io.on("connection", (socket) => {
           userId: user.id,
           name: user.name,
           color: user.color,
-          x: Math.min(1, Math.max(0, payload.x)),
-          y: Math.min(1, Math.max(0, payload.y))
+          x: Math.min(
+            1,
+            Math.max(0, payload.x)
+          ),
+          y: Math.min(
+            1,
+            Math.max(0, payload.y)
+          )
         }
       );
     }
@@ -154,6 +179,18 @@ io.on("connection", (socket) => {
       ) {
         return;
       }
+
+      drawingStateManager.startStroke(
+        currentRoomId,
+        socket.id,
+        {
+          id: payload.strokeId,
+          tool: payload.tool,
+          color: payload.color,
+          width: payload.width,
+          point: payload.point
+        }
+      );
 
       socket.to(currentRoomId).emit(
         "stroke-start",
@@ -174,6 +211,12 @@ io.on("connection", (socket) => {
         return;
       }
 
+      drawingStateManager.addPoints(
+        currentRoomId,
+        payload.strokeId,
+        payload.points
+      );
+
       socket.to(currentRoomId).emit(
         "stroke-points",
         payload
@@ -192,9 +235,89 @@ io.on("connection", (socket) => {
         return;
       }
 
+      drawingStateManager.endStroke(
+        currentRoomId,
+        payload.strokeId
+      );
+
       socket.to(currentRoomId).emit(
         "stroke-end",
         payload
+      );
+
+      io.to(currentRoomId).emit(
+        "history-state",
+        drawingStateManager.getHistoryState(
+          currentRoomId
+        )
+      );
+    }
+  );
+
+  socket.on(
+    "undo-request",
+    (payload: UndoRequestPayload) => {
+      if (
+        !currentRoomId ||
+        payload.roomId !== currentRoomId
+      ) {
+        return;
+      }
+
+      const undoneStroke =
+        drawingStateManager.undo(
+          currentRoomId
+        );
+
+      if (!undoneStroke) {
+        return;
+      }
+
+      io.to(currentRoomId).emit(
+        "canvas-state",
+        {
+          strokes:
+            drawingStateManager.getHistory(
+              currentRoomId
+            ),
+          ...drawingStateManager.getHistoryState(
+            currentRoomId
+          )
+        }
+      );
+    }
+  );
+
+  socket.on(
+    "redo-request",
+    (payload: RedoRequestPayload) => {
+      if (
+        !currentRoomId ||
+        payload.roomId !== currentRoomId
+      ) {
+        return;
+      }
+
+      const redoneStroke =
+        drawingStateManager.redo(
+          currentRoomId
+        );
+
+      if (!redoneStroke) {
+        return;
+      }
+
+      io.to(currentRoomId).emit(
+        "canvas-state",
+        {
+          strokes:
+            drawingStateManager.getHistory(
+              currentRoomId
+            ),
+          ...drawingStateManager.getHistoryState(
+            currentRoomId
+          )
+        }
       );
     }
   );

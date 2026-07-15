@@ -78,6 +78,8 @@ const userPresence =
     cursorsContainer
   );
 
+const toolbar = new Toolbar();
+
 let socketClient:
   WebSocketClient | null = null;
 
@@ -146,11 +148,27 @@ socketClient = new WebSocketClient(
       drawingCanvas.endRemoteStroke(
         payload
       );
+    },
+
+    onCanvasState: (payload) => {
+      drawingCanvas.renderCanvasState(
+        payload.strokes
+      );
+
+      toolbar.setHistoryState(
+        payload.canUndo,
+        payload.canRedo
+      );
+    },
+
+    onHistoryState: (payload) => {
+      toolbar.setHistoryState(
+        payload.canUndo,
+        payload.canRedo
+      );
     }
   }
 );
-
-const toolbar = new Toolbar();
 
 toolbar.onToolChange((tool) => {
   drawingCanvas.setTool(tool);
@@ -162,6 +180,14 @@ toolbar.onColorChange((color) => {
 
 toolbar.onWidthChange((width) => {
   drawingCanvas.setWidth(width);
+});
+
+toolbar.onUndo(() => {
+  socketClient?.requestUndo();
+});
+
+toolbar.onRedo(() => {
+  socketClient?.requestRedo();
 });
 
 let lastCursorSentAt = 0;
@@ -211,6 +237,32 @@ canvasElement.addEventListener(
         Math.max(0, normalizedY)
       )
     );
+  }
+);
+
+document.addEventListener(
+  "keydown",
+  (event) => {
+    const modifierPressed =
+      event.ctrlKey || event.metaKey;
+
+    if (!modifierPressed) {
+      return;
+    }
+
+    if (
+      event.key.toLowerCase() !== "z"
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+
+    if (event.shiftKey) {
+      socketClient?.requestRedo();
+    } else {
+      socketClient?.requestUndo();
+    }
   }
 );
 
