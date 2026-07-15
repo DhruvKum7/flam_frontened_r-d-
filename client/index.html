@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta name="description" content="Draw together in real time using a collaborative canvas">
+
+    <title>Collaborative Canvas</title>
+
+    <link rel="stylesheet" href="/style.css">
+</head>
+
+<body>
+    <div class="app">
+        <header class="topbar">
+            <div>
+                <h1>Collaborative Canvas</h1>
+                <p>Draw together in real time</p>
+            </div>
+
+            <div id="connectionStatus" class="connection-status disconnected">
+                Connecting
+            </div>
+        </header>
+
+        <main class="workspace">
+            <aside class="toolbar">
+                <h2>Tools</h2>
+
+                <button id="brushButton" class="tool-button active" type="button">
+                    Brush
+                </button>
+
+                <button id="eraserButton" class="tool-button" type="button">
+                    Eraser
+                </button>
+
+                <label for="colorInput">Colour</label>
+
+                <input id="colorInput" type="color" value="#1f2937">
+
+                <label for="widthInput">
+                    Stroke width
+                    <span id="widthValue">5</span>
+                </label>
+
+                <input id="widthInput" type="range" min="1" max="40" value="5">
+
+                <button id="undoButton" type="button">
+                    Undo
+                </button>
+
+                <button id="redoButton" type="button">
+                    Redo
+                </button>
+            </aside>
+
+            <section class="canvas-area">
+                <canvas id="drawingCanvas"></canvas>
+            </section>
+
+            <aside class="users-panel">
+                <h2>Online users</h2>
+
+                <ul id="usersList">
+                    <li>Waiting for connection...</li>
+                </ul>
+            </aside>
+        </main>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/main.js"></script>
+</body>
+
+</html>
