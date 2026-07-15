@@ -293,3 +293,29 @@ input {
         margin: 4px 0;
     }
 }
+.topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.metrics {
+    display: flex;
+    gap: 12px;
+    color: #cbd5e1;
+    font-size: 0.8rem;
+}
+
+.metrics strong {
+    color: white;
+}
+
+@media (max-width: 600px) {
+    .topbar-right {
+        gap: 8px;
+    }
+
+    .metrics {
+        display: none;
+    }
+}

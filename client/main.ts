@@ -1,4 +1,5 @@
 import { DrawingCanvas } from "./canvas";
+import { PerformanceMetrics } from "./metrics";
 import { Toolbar } from "./ui";
 import { UserPresence } from "./users";
 import { WebSocketClient } from "./websocket";
@@ -6,6 +7,16 @@ import { WebSocketClient } from "./websocket";
 const canvasElement =
   document.querySelector<HTMLCanvasElement>(
     "#drawingCanvas"
+  );
+
+const fpsElement =
+  document.querySelector<HTMLElement>(
+    "#fpsValue"
+  );
+
+const latencyElement =
+  document.querySelector<HTMLElement>(
+    "#latencyValue"
   );
 
 const connectionStatus =
@@ -30,6 +41,8 @@ const roomNameElement =
 
 if (
   !canvasElement ||
+  !fpsElement ||
+  !latencyElement ||
   !connectionStatus ||
   !usersList ||
   !cursorsContainer ||
@@ -39,6 +52,11 @@ if (
     "Required page elements are missing."
   );
 }
+
+const metrics = new PerformanceMetrics(
+  fpsElement,
+  latencyElement
+);
 
 const queryParameters =
   new URLSearchParams(
@@ -116,6 +134,10 @@ socketClient = new WebSocketClient(
       userPresence.setCurrentUser(
         userId
       );
+    },
+
+    onLatencyUpdate: (latency) => {
+      metrics.updateLatency(latency);
     },
 
     onRoomUsers: ({ users }) => {

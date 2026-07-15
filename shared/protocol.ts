@@ -17,7 +17,13 @@ export interface CanvasStatePayload {
 export interface ClearCanvasRequestPayload {
   roomId: string;
 }
+export interface PingPayload {
+  sentAt: number;
+}
 
+export interface PongPayload {
+  sentAt: number;
+}
 export interface CanvasClearedPayload {
   canUndo: boolean;
   canRedo: boolean;

@@ -55,7 +55,18 @@ io.on("connection", (socket) => {
   socket.emit("connection-ready", {
     userId: socket.id
   });
+  socket.on(
+  "latency-ping",
+  (payload: { sentAt: number }) => {
+    if (!Number.isFinite(payload.sentAt)) {
+      return;
+    }
 
+    socket.emit("latency-pong", {
+      sentAt: payload.sentAt
+    });
+  }
+);
   socket.on(
     "join-room",
     (payload: JoinRoomPayload) => {

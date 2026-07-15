@@ -1,9 +1,13 @@
 import type {
+  CanvasClearedPayload,
   CanvasStatePayload,
+  ClearCanvasRequestPayload,
   ConnectionReadyPayload,
   CursorMovePayload,
   HistoryStatePayload,
   JoinRoomPayload,
+  PingPayload,
+  PongPayload,
   RedoRequestPayload,
   RemoteCursorPayload,
   RoomUsersPayload,
@@ -11,9 +15,7 @@ import type {
   StrokePointsPayload,
   StrokeStartPayload,
   UndoRequestPayload,
-  UserLeftPayload,
-  CanvasClearedPayload,
-ClearCanvasRequestPayload
+  UserLeftPayload
 } from "../shared/protocol";
 
 interface SocketClient {
@@ -31,11 +33,12 @@ interface SocketClient {
 declare const io: () => SocketClient;
 
 interface WebSocketHandlers {
-    onCanvasCleared: (
-  payload: CanvasClearedPayload
-) => void;
   onConnected: (
     userId: string
+  ) => void;
+
+  onLatencyUpdate: (
+    latency: number
   ) => void;
 
   onRoomUsers: (
@@ -69,22 +72,20 @@ interface WebSocketHandlers {
   onHistoryState: (
     payload: HistoryStatePayload
   ) => void;
+
+  onCanvasCleared: (
+    payload: CanvasClearedPayload
+  ) => void;
 }
 
 export class WebSocketClient {
   private readonly socket: SocketClient;
   private readonly roomId: string;
   private readonly userName: string;
-    public requestClearCanvas(): void {
-  const payload: ClearCanvasRequestPayload = {
-    roomId: this.roomId
-  };
 
-  this.socket.emit(
-    "clear-canvas-request",
-    payload
-  );
-}
+  private latencyTimer:
+    number | null = null;
+
   public constructor(
     statusElement: HTMLDivElement,
     roomId: string,
@@ -103,6 +104,7 @@ export class WebSocketClient {
     this.attachRoomEvents(handlers);
     this.attachDrawingEvents(handlers);
     this.attachHistoryEvents(handlers);
+    this.startLatencyMeasurement(handlers);
   }
 
   public sendCursorPosition(
@@ -127,10 +129,13 @@ export class WebSocketClient {
       "roomId"
     >
   ): void {
-    this.socket.emit("stroke-start", {
-      ...payload,
-      roomId: this.roomId
-    });
+    this.socket.emit(
+      "stroke-start",
+      {
+        ...payload,
+        roomId: this.roomId
+      }
+    );
   }
 
   public sendStrokePoints(
@@ -139,10 +144,13 @@ export class WebSocketClient {
       "roomId"
     >
   ): void {
-    this.socket.emit("stroke-points", {
-      ...payload,
-      roomId: this.roomId
-    });
+    this.socket.emit(
+      "stroke-points",
+      {
+        ...payload,
+        roomId: this.roomId
+      }
+    );
   }
 
   public sendStrokeEnd(
@@ -151,10 +159,13 @@ export class WebSocketClient {
       "roomId"
     >
   ): void {
-    this.socket.emit("stroke-end", {
-      ...payload,
-      roomId: this.roomId
-    });
+    this.socket.emit(
+      "stroke-end",
+      {
+        ...payload,
+        roomId: this.roomId
+      }
+    );
   }
 
   public requestUndo(): void {
@@ -175,6 +186,17 @@ export class WebSocketClient {
 
     this.socket.emit(
       "redo-request",
+      payload
+    );
+  }
+
+  public requestClearCanvas(): void {
+    const payload: ClearCanvasRequestPayload = {
+      roomId: this.roomId
+    };
+
+    this.socket.emit(
+      "clear-canvas-request",
       payload
     );
   }
@@ -221,7 +243,9 @@ export class WebSocketClient {
 
     this.socket.on(
       "connection-ready",
-      (payload: ConnectionReadyPayload) => {
+      (
+        payload: ConnectionReadyPayload
+      ) => {
         handlers.onConnected(
           payload.userId
         );
@@ -274,13 +298,57 @@ export class WebSocketClient {
       "canvas-state",
       handlers.onCanvasState
     );
-    this.socket.on(
-  "canvas-cleared",
-  handlers.onCanvasCleared
-);
+
     this.socket.on(
       "history-state",
       handlers.onHistoryState
     );
+
+    this.socket.on(
+      "canvas-cleared",
+      handlers.onCanvasCleared
+    );
+  }
+
+  private startLatencyMeasurement(
+    handlers: WebSocketHandlers
+  ): void {
+    this.socket.on(
+      "latency-pong",
+      (payload: PongPayload) => {
+        if (
+          !Number.isFinite(payload.sentAt)
+        ) {
+          return;
+        }
+
+        const latency =
+          performance.now() -
+          payload.sentAt;
+
+        handlers.onLatencyUpdate(
+          latency
+        );
+      }
+    );
+
+    const sendPing = (): void => {
+      const payload: PingPayload = {
+        sentAt: performance.now()
+      };
+
+      this.socket.emit(
+        "latency-ping",
+        payload
+      );
+    };
+
+    sendPing();
+
+    this.latencyTimer =
+      window.setInterval(
+        sendPing,
+        3000
+      );
   }
 }
