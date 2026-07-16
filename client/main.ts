@@ -450,3 +450,30 @@ window.addEventListener(
       }, 150);
   }
 );
+window.addEventListener(
+  "load",
+  () => {
+
+    const loading =
+      document.querySelector<HTMLElement>(
+        "#loadingScreen"
+      );
+
+    if (!loading) {
+      return;
+    }
+
+    window.setTimeout(() => {
+
+      loading.classList.add("hide");
+
+      window.setTimeout(() => {
+
+        loading.remove();
+
+      },500);
+
+    },900);
+
+  }
+);

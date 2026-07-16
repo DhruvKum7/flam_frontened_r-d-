@@ -1,11 +1,10 @@
 import express from "express";
-import http from "http";
-import path from "path";
+import * as http from "http";
+import * as path from "path";
 import { Server } from "socket.io";
 
 import type {
-
-    ClearCanvasRequestPayload,
+  ClearCanvasRequestPayload,
   CursorMovePayload,
   JoinRoomPayload,
   RedoRequestPayload,
@@ -40,6 +39,12 @@ const publicDirectory = path.join(
 app.use(express.static(publicDirectory));
 app.use(express.static(clientDirectory));
 
+app.get("/", (_request, response) => {
+  response.sendFile(
+    path.join(clientDirectory, "index.html")
+  );
+});
+
 app.get("/health", (_request, response) => {
   response.status(200).json({
     status: "ok",
@@ -55,23 +60,28 @@ io.on("connection", (socket) => {
   socket.emit("connection-ready", {
     userId: socket.id
   });
-  socket.on(
-  "latency-ping",
-  (payload: { sentAt: number }) => {
-    if (!Number.isFinite(payload.sentAt)) {
-      return;
-    }
 
-    socket.emit("latency-pong", {
-      sentAt: payload.sentAt
-    });
-  }
-);
+  socket.on(
+    "latency-ping",
+    (payload: { sentAt: number }) => {
+      if (
+        !payload ||
+        !Number.isFinite(payload.sentAt)
+      ) {
+        return;
+      }
+
+      socket.emit("latency-pong", {
+        sentAt: payload.sentAt
+      });
+    }
+  );
+
   socket.on(
     "join-room",
     (payload: JoinRoomPayload) => {
       const roomId =
-        typeof payload.roomId === "string"
+        typeof payload?.roomId === "string"
           ? payload.roomId.trim().slice(0, 40)
           : "";
 
@@ -89,12 +99,11 @@ io.on("connection", (socket) => {
           socket.id
         );
 
-        socket.to(previousRoomId).emit(
-          "user-left",
-          {
+        socket
+          .to(previousRoomId)
+          .emit("user-left", {
             userId: socket.id
-          }
-        );
+          });
 
         io.to(previousRoomId).emit(
           "room-users",
@@ -122,7 +131,9 @@ io.on("connection", (socket) => {
       });
 
       const historyState =
-        drawingStateManager.getHistoryState(roomId);
+        drawingStateManager.getHistoryState(
+          roomId
+        );
 
       socket.emit("canvas-state", {
         strokes:
@@ -142,7 +153,7 @@ io.on("connection", (socket) => {
     (payload: CursorMovePayload) => {
       if (
         !currentRoomId ||
-        payload.roomId !== currentRoomId
+        payload?.roomId !== currentRoomId
       ) {
         return;
       }
@@ -163,9 +174,9 @@ io.on("connection", (socket) => {
         return;
       }
 
-      socket.to(currentRoomId).emit(
-        "cursor-move",
-        {
+      socket
+        .to(currentRoomId)
+        .emit("cursor-move", {
           userId: user.id,
           name: user.name,
           color: user.color,
@@ -177,8 +188,7 @@ io.on("connection", (socket) => {
             1,
             Math.max(0, payload.y)
           )
-        }
-      );
+        });
     }
   );
 
@@ -187,7 +197,7 @@ io.on("connection", (socket) => {
     (payload: StrokeStartPayload) => {
       if (
         !currentRoomId ||
-        payload.roomId !== currentRoomId ||
+        payload?.roomId !== currentRoomId ||
         !payload.strokeId
       ) {
         return;
@@ -205,10 +215,9 @@ io.on("connection", (socket) => {
         }
       );
 
-      socket.to(currentRoomId).emit(
-        "stroke-start",
-        payload
-      );
+      socket
+        .to(currentRoomId)
+        .emit("stroke-start", payload);
     }
   );
 
@@ -217,7 +226,7 @@ io.on("connection", (socket) => {
     (payload: StrokePointsPayload) => {
       if (
         !currentRoomId ||
-        payload.roomId !== currentRoomId ||
+        payload?.roomId !== currentRoomId ||
         !payload.strokeId ||
         !Array.isArray(payload.points)
       ) {
@@ -230,10 +239,9 @@ io.on("connection", (socket) => {
         payload.points
       );
 
-      socket.to(currentRoomId).emit(
-        "stroke-points",
-        payload
-      );
+      socket
+        .to(currentRoomId)
+        .emit("stroke-points", payload);
     }
   );
 
@@ -242,7 +250,7 @@ io.on("connection", (socket) => {
     (payload: StrokeEndPayload) => {
       if (
         !currentRoomId ||
-        payload.roomId !== currentRoomId ||
+        payload?.roomId !== currentRoomId ||
         !payload.strokeId
       ) {
         return;
@@ -253,10 +261,9 @@ io.on("connection", (socket) => {
         payload.strokeId
       );
 
-      socket.to(currentRoomId).emit(
-        "stroke-end",
-        payload
-      );
+      socket
+        .to(currentRoomId)
+        .emit("stroke-end", payload);
 
       io.to(currentRoomId).emit(
         "history-state",
@@ -272,7 +279,7 @@ io.on("connection", (socket) => {
     (payload: UndoRequestPayload) => {
       if (
         !currentRoomId ||
-        payload.roomId !== currentRoomId
+        payload?.roomId !== currentRoomId
       ) {
         return;
       }
@@ -306,7 +313,7 @@ io.on("connection", (socket) => {
     (payload: RedoRequestPayload) => {
       if (
         !currentRoomId ||
-        payload.roomId !== currentRoomId
+        payload?.roomId !== currentRoomId
       ) {
         return;
       }
@@ -334,29 +341,33 @@ io.on("connection", (socket) => {
       );
     }
   );
+
   socket.on(
-  "clear-canvas-request",
-  (payload: ClearCanvasRequestPayload) => {
-    if (
-      !currentRoomId ||
-      payload.roomId !== currentRoomId
-    ) {
-      return;
-    }
-
-    drawingStateManager.clearRoom(
-      currentRoomId
-    );
-
-    io.to(currentRoomId).emit(
-      "canvas-cleared",
-      {
-        canUndo: false,
-        canRedo: false
+    "clear-canvas-request",
+    (
+      payload: ClearCanvasRequestPayload
+    ) => {
+      if (
+        !currentRoomId ||
+        payload?.roomId !== currentRoomId
+      ) {
+        return;
       }
-    );
-  }
-);
+
+      drawingStateManager.clearRoom(
+        currentRoomId
+      );
+
+      io.to(currentRoomId).emit(
+        "canvas-cleared",
+        {
+          canUndo: false,
+          canRedo: false
+        }
+      );
+    }
+  );
+
   socket.on("disconnect", () => {
     if (currentRoomId) {
       roomManager.removeUser(
@@ -364,12 +375,11 @@ io.on("connection", (socket) => {
         socket.id
       );
 
-      socket.to(currentRoomId).emit(
-        "user-left",
-        {
+      socket
+        .to(currentRoomId)
+        .emit("user-left", {
           userId: socket.id
-        }
-      );
+        });
 
       io.to(currentRoomId).emit(
         "room-users",

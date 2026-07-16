@@ -787,3 +787,91 @@ kbd {
         transform: translateY(8px);
     }
 }
+.loading-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    background:
+        radial-gradient(circle at center,
+            #1e3a8a,
+            #020617);
+
+    transition: opacity .45s ease;
+}
+
+.loading-screen.hide {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.loader {
+    text-align: center;
+    color: white;
+}
+
+.loader h1 {
+    margin-top: 20px;
+    font-size: 34px;
+    font-weight: 700;
+}
+
+.loader p {
+    color: #cbd5e1;
+}
+
+.loader-circle {
+
+    width: 90px;
+    height: 90px;
+
+    border-radius: 50%;
+
+    border: 8px solid rgba(255, 255, 255, .15);
+
+    border-top-color: #38bdf8;
+
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+
+}
+.app-footer {
+    position: fixed;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+
+    font-size: 12px;
+
+    color: #64748b;
+
+    background: rgba(255, 255, 255, .9);
+
+    padding: 6px 14px;
+
+    border-radius: 999px;
+
+    backdrop-filter: blur(10px);
+
+    box-shadow: 0 6px 18px rgba(0, 0, 0, .08);
+
+    z-index: 999;
+}
+
+.app-footer strong {
+    color: #2563eb;
+}
