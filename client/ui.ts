@@ -3,14 +3,15 @@ import type {
 } from "../shared/protocol";
 
 interface ToolbarElements {
-    clearButton: HTMLButtonElement;
   brushButton: HTMLButtonElement;
   eraserButton: HTMLButtonElement;
   colorInput: HTMLInputElement;
+  colorValue: HTMLSpanElement;
   widthInput: HTMLInputElement;
   widthValue: HTMLSpanElement;
   undoButton: HTMLButtonElement;
   redoButton: HTMLButtonElement;
+  clearButton: HTMLButtonElement;
 }
 
 export class Toolbar {
@@ -21,10 +22,6 @@ export class Toolbar {
       document.querySelector<HTMLButtonElement>(
         "#brushButton"
       );
-      const clearButton =
-  document.querySelector<HTMLButtonElement>(
-    "#clearButton"
-  );
 
     const eraserButton =
       document.querySelector<HTMLButtonElement>(
@@ -34,6 +31,11 @@ export class Toolbar {
     const colorInput =
       document.querySelector<HTMLInputElement>(
         "#colorInput"
+      );
+
+    const colorValue =
+      document.querySelector<HTMLSpanElement>(
+        "#colorValue"
       );
 
     const widthInput =
@@ -56,14 +58,21 @@ export class Toolbar {
         "#redoButton"
       );
 
+    const clearButton =
+      document.querySelector<HTMLButtonElement>(
+        "#clearButton"
+      );
+
     if (
       !brushButton ||
       !eraserButton ||
       !colorInput ||
+      !colorValue ||
       !widthInput ||
       !widthValue ||
       !undoButton ||
-      !redoButton || !clearButton
+      !redoButton ||
+      !clearButton
     ) {
       throw new Error(
         "Toolbar elements are missing."
@@ -71,31 +80,33 @@ export class Toolbar {
     }
 
     this.elements = {
-  brushButton,
-  eraserButton,
-  colorInput,
-  widthInput,
-  widthValue,
-  undoButton,
-  redoButton,
-  clearButton
-};
+      brushButton,
+      eraserButton,
+      colorInput,
+      colorValue,
+      widthInput,
+      widthValue,
+      undoButton,
+      redoButton,
+      clearButton
+    };
+
+    this.updateColorValue(
+      this.elements.colorInput.value
+    );
+
+    this.updateWidthValue(
+      Number(this.elements.widthInput.value)
+    );
   }
-public onClear(
-  listener: () => void
-): void {
-  this.elements.clearButton.addEventListener(
-    "click",
-    listener
-  );
-}
+
   public onToolChange(
     listener: (tool: DrawingTool) => void
   ): void {
     this.elements.brushButton.addEventListener(
       "click",
       () => {
-        this.setActiveTool("brush");
+        this.selectBrush();
         listener("brush");
       }
     );
@@ -103,7 +114,7 @@ public onClear(
     this.elements.eraserButton.addEventListener(
       "click",
       () => {
-        this.setActiveTool("eraser");
+        this.selectEraser();
         listener("eraser");
       }
     );
@@ -115,9 +126,11 @@ public onClear(
     this.elements.colorInput.addEventListener(
       "input",
       () => {
-        listener(
-          this.elements.colorInput.value
-        );
+        const color =
+          this.elements.colorInput.value;
+
+        this.updateColorValue(color);
+        listener(color);
       }
     );
   }
@@ -132,9 +145,11 @@ public onClear(
           this.elements.widthInput.value
         );
 
-        this.elements.widthValue.textContent =
-          width.toString();
+        if (!Number.isFinite(width)) {
+          return;
+        }
 
+        this.updateWidthValue(width);
         listener(width);
       }
     );
@@ -156,6 +171,23 @@ public onClear(
       "click",
       listener
     );
+  }
+
+  public onClear(
+    listener: () => void
+  ): void {
+    this.elements.clearButton.addEventListener(
+      "click",
+      listener
+    );
+  }
+
+  public selectBrush(): void {
+    this.setActiveTool("brush");
+  }
+
+  public selectEraser(): void {
+    this.setActiveTool("eraser");
   }
 
   public setHistoryState(
@@ -180,5 +212,29 @@ public onClear(
       "active",
       !brushSelected
     );
+
+    this.elements.brushButton.setAttribute(
+      "aria-pressed",
+      String(brushSelected)
+    );
+
+    this.elements.eraserButton.setAttribute(
+      "aria-pressed",
+      String(!brushSelected)
+    );
+  }
+
+  private updateColorValue(
+    color: string
+  ): void {
+    this.elements.colorValue.textContent =
+      color.toUpperCase();
+  }
+
+  private updateWidthValue(
+    width: number
+  ): void {
+    this.elements.widthValue.textContent =
+      Math.round(width).toString();
   }
 }

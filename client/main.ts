@@ -1,5 +1,6 @@
 import { DrawingCanvas } from "./canvas";
 import { PerformanceMetrics } from "./metrics";
+import { ToastManager } from "./toast";
 import { Toolbar } from "./ui";
 import { UserPresence } from "./users";
 import { WebSocketClient } from "./websocket";
@@ -34,6 +35,11 @@ const cursorsContainer =
     "#remoteCursors"
   );
 
+const toastContainer =
+  document.querySelector<HTMLDivElement>(
+    "#toastContainer"
+  );
+
 const roomNameElement =
   document.querySelector<HTMLElement>(
     "#roomName"
@@ -46,6 +52,7 @@ if (
   !connectionStatus ||
   !usersList ||
   !cursorsContainer ||
+  !toastContainer ||
   !roomNameElement
 ) {
   throw new Error(
@@ -57,6 +64,9 @@ const metrics = new PerformanceMetrics(
   fpsElement,
   latencyElement
 );
+
+const toastManager =
+  new ToastManager(toastContainer);
 
 const queryParameters =
   new URLSearchParams(
@@ -101,6 +111,8 @@ const toolbar = new Toolbar();
 let socketClient:
   WebSocketClient | null = null;
 
+let hasShownConnectedToast = false;
+
 const drawingCanvas =
   new DrawingCanvas(
     canvasElement,
@@ -134,6 +146,16 @@ socketClient = new WebSocketClient(
       userPresence.setCurrentUser(
         userId
       );
+
+      if (!hasShownConnectedToast) {
+        toastManager.show({
+          title: "Connected",
+          message: `Joined room "${roomId}".`,
+          type: "success"
+        });
+
+        hasShownConnectedToast = true;
+      }
     },
 
     onLatencyUpdate: (latency) => {
@@ -152,6 +174,13 @@ socketClient = new WebSocketClient(
 
     onUserLeft: ({ userId }) => {
       userPresence.removeUser(userId);
+
+      toastManager.show({
+        title: "User left",
+        message:
+          "A collaborator disconnected from the room.",
+        type: "info"
+      });
     },
 
     onStrokeStart: (payload) => {
@@ -197,6 +226,13 @@ socketClient = new WebSocketClient(
         payload.canUndo,
         payload.canRedo
       );
+
+      toastManager.show({
+        title: "Canvas cleared",
+        message:
+          "The shared canvas was cleared for everyone.",
+        type: "warning"
+      });
     }
   }
 );
@@ -215,10 +251,26 @@ toolbar.onWidthChange((width) => {
 
 toolbar.onUndo(() => {
   socketClient?.requestUndo();
+
+  toastManager.show({
+    title: "Undo requested",
+    message:
+      "The latest shared stroke will be removed.",
+    type: "info",
+    duration: 1600
+  });
 });
 
 toolbar.onRedo(() => {
   socketClient?.requestRedo();
+
+  toastManager.show({
+    title: "Redo requested",
+    message:
+      "The latest undone stroke will be restored.",
+    type: "info",
+    duration: 1600
+  });
 });
 
 toolbar.onClear(() => {
@@ -286,25 +338,95 @@ canvasElement.addEventListener(
 document.addEventListener(
   "keydown",
   (event) => {
+    const target =
+      event.target as HTMLElement | null;
+
+    const isTyping =
+      target instanceof HTMLInputElement ||
+      target instanceof HTMLTextAreaElement ||
+      target?.isContentEditable === true;
+
+    if (isTyping) {
+      return;
+    }
+
+    const key = event.key.toLowerCase();
+
     const modifierPressed =
       event.ctrlKey || event.metaKey;
 
-    if (!modifierPressed) {
+    if (modifierPressed && key === "z") {
+      event.preventDefault();
+
+      if (event.shiftKey) {
+        socketClient?.requestRedo();
+
+        toastManager.show({
+          title: "Redo requested",
+          type: "info",
+          duration: 1400
+        });
+      } else {
+        socketClient?.requestUndo();
+
+        toastManager.show({
+          title: "Undo requested",
+          type: "info",
+          duration: 1400
+        });
+      }
+
+      return;
+    }
+
+    if (modifierPressed && key === "y") {
+      event.preventDefault();
+
+      socketClient?.requestRedo();
+
+      toastManager.show({
+        title: "Redo requested",
+        type: "info",
+        duration: 1400
+      });
+
       return;
     }
 
     if (
-      event.key.toLowerCase() !== "z"
+      event.ctrlKey ||
+      event.metaKey ||
+      event.altKey
     ) {
       return;
     }
 
-    event.preventDefault();
+    if (key === "b") {
+      event.preventDefault();
 
-    if (event.shiftKey) {
-      socketClient?.requestRedo();
-    } else {
-      socketClient?.requestUndo();
+      toolbar.selectBrush();
+      drawingCanvas.setTool("brush");
+
+      toastManager.show({
+        title: "Brush selected",
+        type: "success",
+        duration: 1200
+      });
+
+      return;
+    }
+
+    if (key === "e") {
+      event.preventDefault();
+
+      toolbar.selectEraser();
+      drawingCanvas.setTool("eraser");
+
+      toastManager.show({
+        title: "Eraser selected",
+        type: "success",
+        duration: 1200
+      });
     }
   }
 );

@@ -16,66 +16,143 @@
 <body>
     <div class="app">
         <header class="topbar">
-            <div>
-                <h1>Collaborative Canvas</h1>
-                <p>Draw together in real time</p>
+            <div class="brand">
+                <div class="brand-mark">CC</div>
+
+                <div>
+                    <h1>Collaborative Canvas</h1>
+                    <p>Draw together in real time</p>
+                </div>
             </div>
+
             <div class="topbar-right">
                 <div class="metrics">
-                    <span>
-                        FPS:
+                    <div class="metric-card">
+                        <span>FPS</span>
                         <strong id="fpsValue">0</strong>
-                    </span>
-            
-                    <span>
-                        Latency:
-                        <strong id="latencyValue">--</strong> ms
-                    </span>
+                    </div>
+
+                    <div class="metric-card">
+                        <span>Latency</span>
+                        <strong>
+                            <span id="latencyValue">--</span> ms
+                        </strong>
+                    </div>
                 </div>
+
                 <div id="connectionStatus" class="connection-status disconnected">
-                    Connecting
+                    <span class="status-dot"></span>
+                    <span class="status-text">Connecting</span>
                 </div>
             </div>
         </header>
 
         <main class="workspace">
             <aside class="toolbar">
-                <h2>Tools</h2>
+                <div class="panel-heading">
+                    <div>
+                        <span class="eyebrow">Workspace</span>
+                        <h2>Drawing tools</h2>
+                    </div>
+                </div>
 
-                <button id="brushButton" class="tool-button active" type="button">
-                    Brush
-                </button>
+                <div class="tool-group">
+                    <button id="brushButton" class="tool-button active" type="button">
+                        <span class="tool-icon">✎</span>
 
-                <button id="eraserButton" class="tool-button" type="button">
-                    Eraser
-                </button>
+                        <span class="tool-copy">
+                            <strong>Brush</strong>
+                            <small>Draw smooth strokes</small>
+                        </span>
+                    </button>
 
-                <label for="colorInput">
-                    Colour
-                </label>
+                    <button id="eraserButton" class="tool-button" type="button">
+                        <span class="tool-icon">⌫</span>
 
-                <input id="colorInput" type="color" value="#1f2937">
+                        <span class="tool-copy">
+                            <strong>Eraser</strong>
+                            <small>Remove canvas marks</small>
+                        </span>
+                    </button>
+                </div>
 
-                <label for="widthInput">
-                    Stroke width:
-                    <span id="widthValue">5</span>
-                </label>
+                <div class="control-group">
+                    <div class="control-heading">
+                        <label for="colorInput">Colour</label>
+                        <span>Brush colour</span>
+                    </div>
 
-                <input id="widthInput" type="range" min="1" max="40" value="5">
+                    <div class="color-control">
+                        <input id="colorInput" type="color" value="#1f2937">
 
-                <button id="undoButton" type="button" disabled>
-                    Undo
-                </button>
+                        <span id="colorValue">#1F2937</span>
+                    </div>
+                </div>
 
-                <button id="redoButton" type="button" disabled>
-                    Redo
-                </button>
-                <button id="clearButton" type="button">
+                <div class="control-group">
+                    <div class="control-heading">
+                        <label for="widthInput">
+                            Stroke width
+                        </label>
+
+                        <span>
+                            <strong id="widthValue">5</strong> px
+                        </span>
+                    </div>
+
+                    <input id="widthInput" type="range" min="1" max="40" value="5">
+                </div>
+
+                <div class="history-actions">
+                    <button id="undoButton" class="secondary-action" type="button" disabled>
+                        ↶ Undo
+                    </button>
+
+                    <button id="redoButton" class="secondary-action" type="button" disabled>
+                        ↷ Redo
+                    </button>
+                </div>
+
+                <button id="clearButton" class="danger-action" type="button">
                     Clear canvas
                 </button>
+
+                <div class="shortcut-card">
+                    <strong>Keyboard shortcuts</strong>
+                
+                    <div>
+                        <span>Brush</span>
+                        <kbd>B</kbd>
+                    </div>
+                
+                    <div>
+                        <span>Eraser</span>
+                        <kbd>E</kbd>
+                    </div>
+                
+                    <div>
+                        <span>Undo</span>
+                        <kbd>Ctrl</kbd>
+                        <span>+</span>
+                        <kbd>Z</kbd>
+                    </div>
+                
+                    <div>
+                        <span>Redo</span>
+                        <kbd>Ctrl</kbd>
+                        <span>+</span>
+                        <kbd>Shift</kbd>
+                        <span>+</span>
+                        <kbd>Z</kbd>
+                    </div>
+                </div>
             </aside>
 
             <section id="canvasArea" class="canvas-area">
+                <div class="canvas-label">
+                    Live shared canvas
+                </div>
+
                 <canvas id="drawingCanvas"></canvas>
 
                 <div id="remoteCursors" class="remote-cursors" aria-hidden="true"></div>
@@ -83,23 +160,41 @@
 
             <aside class="users-panel">
                 <div class="room-information">
-                    <span>Room</span>
-                    <strong id="roomName">
-                        main-room
-                    </strong>
+                    <span class="eyebrow">Current room</span>
+
+                    <div class="room-row">
+                        <strong id="roomName">
+                            main-room
+                        </strong>
+
+                        <span class="live-badge">
+                            Live
+                        </span>
+                    </div>
                 </div>
 
-                <h2>Online users</h2>
+                <div class="users-heading">
+                    <div>
+                        <span class="eyebrow">
+                            Collaboration
+                        </span>
+
+                        <h2>Online users</h2>
+                    </div>
+                </div>
 
                 <ul id="usersList">
-                    <li>Waiting for connection...</li>
+                    <li class="loading-user">
+                        Waiting for connection...
+                    </li>
                 </ul>
             </aside>
         </main>
     </div>
-
+    <div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="true"></div>
     <script src="/socket.io/socket.io.js"></script>
     <script src="/main.js"></script>
+    
 </body>
 
 </html>
